@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RoomData.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="RevitAPITrainingReadWrite.addin" />
@@ -60,6 +61,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(TargetDir)*.*" "C:\Program Files\RevitAPITrainig\" /y /i
-xcopy "$(ProjectDir)$(ProjectName).addin" "%25appdata%25\Autodesk\Revit\Addins\2021" /y /i</PostBuildEvent>
+xcopy "$(ProjectDir)$(ProjectName).addin" "%25appdata%25\Autodesk\Revit\Addins\2021" /y /i
+xcopy "$(ProjectDir)$(ProjectName).addin" "%25appdata%25\Autodesk\Revit\Addins\2022" /y /i</PostBuildEvent>
   </PropertyGroup>
 </Project>

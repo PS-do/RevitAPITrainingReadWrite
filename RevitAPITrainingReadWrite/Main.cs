@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Net.WebRequestMethods;
+using File = System.IO.File;
 
 namespace RevitAPITrainingReadWrite
 {
@@ -23,35 +25,48 @@ namespace RevitAPITrainingReadWrite
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);//начальная папка, скоторой будет начинаться диалог
+            openFileDialog.Filter = "All files(*.*)|*.*";//фильтр отображаемых файлов по расширению
+
+            string filePath = string.Empty;
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                filePath = openFileDialog.FileName;
+            }
+
+            if (string.IsNullOrEmpty(filePath))
+                return Result.Cancelled;
+
+            var lines = File.ReadLines(filePath).ToList();
+            List<RoomData> roomDataList = new List<RoomData>();
+            foreach (var line in lines)
+            {
+                List<string> values = line.Split(';').ToList();
+                roomDataList.Add(new RoomData
+                {
+                    Name = values[0],
+                    Number = values[1]
+                });
+            }            
+
             string roomInfo=string.Empty;
             var rooms = new FilteredElementCollector(doc)
                 .OfCategory(BuiltInCategory.OST_Rooms)
                 .Cast<Room>()
                 .ToList();
-            foreach (Room room in rooms)
-            {
-                string roomName = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString();
-                roomInfo += $"{roomName}\t{room.Number}\t{room.Area}{Environment.NewLine}";
-            }
 
-            var saveFileDialog = new SaveFileDialog
+            using (var ts = new Transaction(doc,"Set parametrs"))
             {
-                OverwritePrompt = true,//если файл существует, выдавать запрос на его перезапись
-                InitialDirectory=Environment.GetFolderPath(Environment.SpecialFolder.Desktop),//начальная папка, скоторой будет начинаться диалог
-                Filter = "All files(*.*)|*.*",//фильтр отображаемых файлов по расширению
-                FileName="roomInfo.csv",//Имя файла по умолчанию
-                DefaultExt=".csv"//Расширение по умолчани
-            };
-            string selectedFilePatch=string.Empty;
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                selectedFilePatch = saveFileDialog.FileName;
-            }
-            if (string.IsNullOrEmpty(selectedFilePatch))
-                return Result.Cancelled;
-
-            File.WriteAllText(selectedFilePatch, roomInfo);
-
+                ts.Start();
+                foreach (RoomData roomData in roomDataList)
+                {
+                    Room room = rooms.FirstOrDefault(r => r.Number.Equals(roomData.Number));
+                    if (room == null) continue;
+                    room.get_Parameter(BuiltInParameter.ROOM_NAME).Set(roomData.Name);
+                }
+                ts.Commit();
+            }           
             return Result.Succeeded;
         }
     }
