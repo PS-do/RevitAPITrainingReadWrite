@@ -27,32 +27,23 @@ namespace RevitAPITrainingReadWrite
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
-            string roomInfo = string.Empty;
 
-            var rooms = new FilteredElementCollector(doc)
-                .OfCategory(BuiltInCategory.OST_Rooms)
-                .Cast<Room>()
-                .ToList();
 
-            string excelPatch = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "rooms.xlsx");
-            using (FileStream fs = new FileStream(excelPatch, FileMode.Create, FileAccess.Write))
+            OpenFileDialog openFileDialog1 = new OpenFileDialog 
             {
-                IWorkbook workBook = new XSSFWorkbook(); 
-                ISheet sheet = workBook.CreateSheet("Лист1");
-                int rowIndex = 0;
-                foreach (var room in rooms)
-                {
-                    sheet.SetCellValue(rowIndex, columnIndex: 0, room.Name);
-                    sheet.SetCellValue(rowIndex, columnIndex: 1, room.Number);
-                    sheet.SetCellValue(rowIndex, columnIndex: 2, room.Area);
-                    rowIndex++;
-                }
-                workBook.Write(fs);
-                workBook.Close();
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                Filter = "Excel files(*.xlsx) | *.xlsx" 
+            };
+
+            string filePath =string.Empty;
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                filePath = openFileDialog1.FileName;
             }
-
-            System.Diagnostics.Process.Start(excelPatch);
-
+            var rooms =new FilteredElementCollector(doc)
+            .OfCategory(BuiltInCategory.OST_Rooms)
+            .Cast<Room>()
+            .ToList();
             return Result.Succeeded;
         }
     }
