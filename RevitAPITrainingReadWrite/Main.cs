@@ -67,7 +67,7 @@ namespace RevitAPITrainingReadWrite
                     string name = sheet.GetRow(rowIndex).GetCell(0).StringCellValue;
                     string number= sheet.GetRow(rowIndex).GetCell(1).StringCellValue;
 
-                    var room = rooms.FirstOrDefault(r => r.Equals(number));// берём первое помещение из модели, у которого номер совпадает с тем номером,
+                    var room = rooms.FirstOrDefault(r => r.Number.Equals(number));// берём первое помещение из модели, у которого номер совпадает с тем номером,
                                                                            // который находится в текущей строке
 
                     if (room == null)
@@ -79,7 +79,7 @@ namespace RevitAPITrainingReadWrite
                     using (var ts = new Transaction(doc, "Set parameter"))
                     {
                         ts.Start();
-                        room.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(name); 
+                        room.get_Parameter(BuiltInParameter.ROOM_NAME).Set(name); 
                         ts.Commit();
 
                     }
