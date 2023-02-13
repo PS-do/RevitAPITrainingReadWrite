@@ -2,6 +2,8 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,48 +27,32 @@ namespace RevitAPITrainingReadWrite
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);//начальная папка, скоторой будет начинаться диалог
-            openFileDialog.Filter = "All files(*.*)|*.*";//фильтр отображаемых файлов по расширению
+            string roomInfo = string.Empty;
 
-            string filePath = string.Empty;
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                filePath = openFileDialog.FileName;
-            }
-
-            if (string.IsNullOrEmpty(filePath))
-                return Result.Cancelled;
-
-            var lines = File.ReadLines(filePath).ToList();
-            List<RoomData> roomDataList = new List<RoomData>();
-            foreach (var line in lines)
-            {
-                List<string> values = line.Split(';').ToList();
-                roomDataList.Add(new RoomData
-                {
-                    Name = values[0],
-                    Number = values[1]
-                });
-            }            
-
-            string roomInfo=string.Empty;
             var rooms = new FilteredElementCollector(doc)
                 .OfCategory(BuiltInCategory.OST_Rooms)
                 .Cast<Room>()
                 .ToList();
 
-            using (var ts = new Transaction(doc,"Set parametrs"))
+            string excelPatch = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "rooms.xlsx");
+            using (FileStream fs = new FileStream(excelPatch, FileMode.Create, FileAccess.Write))
             {
-                ts.Start();
-                foreach (RoomData roomData in roomDataList)
+                IWorkbook workBook = new XSSFWorkbook(); 
+                ISheet sheet = workBook.CreateSheet("Лист1");
+                int rowIndex = 0;
+                foreach (var room in rooms)
                 {
-                    Room room = rooms.FirstOrDefault(r => r.Number.Equals(roomData.Number));
-                    if (room == null) continue;
-                    room.get_Parameter(BuiltInParameter.ROOM_NAME).Set(roomData.Name);
+                    sheet.SetCellValue(rowIndex, columnIndex: 0, room.Name);
+                    sheet.SetCellValue(rowIndex, columnIndex: 1, room.Number);
+                    sheet.SetCellValue(rowIndex, columnIndex: 2, room.Area);
+                    rowIndex++;
                 }
-                ts.Commit();
-            }           
+                workBook.Write(fs);
+                workBook.Close();
+            }
+
+            System.Diagnostics.Process.Start(excelPatch);
+
             return Result.Succeeded;
         }
     }
